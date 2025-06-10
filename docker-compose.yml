@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  nextjs-app:
+    # Build the Docker image using the Dockerfile in the current directory
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Map port 3000 from the container to port 3000 on the host
+    ports:
+      - "3000:3000"
+    # Load environment variables from the .env file in the current directory
+    # Ensure your .env file contains all necessary variables (e.g., Supabase keys, Stripe keys)
+    env_file:
+      - .env
+    # Always restart the container if it stops
+    restart: always
