@@ -46,7 +46,7 @@ export function ClassSearch() {
     if (exerciseTypeId) params.set('exerciseTypeId', exerciseTypeId);
     if (date) params.set('date', date);
     
-    router.push(`/search?${params.toString()}`);
+    router.push(`/enroll?${params.toString()}`);
   };
 
   return (

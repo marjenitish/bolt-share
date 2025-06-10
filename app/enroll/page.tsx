@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PaymentForm } from '@/components/enrollment/payment-form'; // Import the Stripe PaymentForm
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
+import { Navigation } from '@/components/shared/navigation';
 
 // Load your Stripe publishable key from environment variables
 const stripePromise = loadStripe(
@@ -196,6 +197,8 @@ export default function EnrollPage() {
   };
 
   return (
+    <div className="min-h-screen bg-background">
+      <Navigation />
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Enroll in Classes</h1>
 
@@ -371,6 +374,7 @@ export default function EnrollPage() {
           )}
         </>
       )}
+    </div>
     </div>
   );
 }

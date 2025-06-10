@@ -189,7 +189,7 @@ export default function Home() {
                 Join our community of active adults aged 50+ and discover classes designed to keep you healthy, social, and engaged.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/search">
+                <Link href="/enroll">
                   <Button size="lg" className="h-14 text-lg px-8">
                     Find Classes Near You
                     <ArrowRight className="ml-2 h-5 w-5" />
@@ -245,7 +245,7 @@ export default function Home() {
                       </li>
                     ))}
                   </ul>
-                  <Link href="/search">
+                  <Link href="/enroll">
                     <Button variant="outline" className="w-full">
                       Learn More
                       <ArrowRight className="ml-2 h-4 w-4" />
