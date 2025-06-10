@@ -111,20 +111,20 @@ export default function ProfilePage() {
           form.reset(customerProfile);
 
           console.log("customerProfile", customerProfile)
-          
+
           // Step 1: Fetch enrollments for the customer
-const { data: enrollments, error: enrollmentsError } = await supabase
-  .from('enrollments')
-  .select('id')
-  .eq('customer_id', customerProfile.id);
+          const { data: enrollments, error: enrollmentsError } = await supabase
+            .from('enrollments')
+            .select('id')
+            .eq('customer_id', customerProfile.id);
 
           if (enrollmentsError) {
             console.error('Error fetching enrollments:', enrollmentsError);
             return;
           }
-          
+
           const enrollmentIds = enrollments.map((e: any) => e.id);
-          
+
           // Step 2: Fetch bookings using the enrollment IDs
           const { data: bookingsData, error: bookingsError } = await supabase
             .from('bookings')
@@ -144,27 +144,27 @@ const { data: enrollments, error: enrollmentsError } = await supabase
             `)
             .in('enrollment_id', enrollmentIds)
             .order('created_at', { ascending: false });
-          
+
           if (bookingsError) {
             console.error('Error fetching bookings:', bookingsError);
           }
 
           console.log("bookingsData", bookingsData)
-            
+
           setBookings(bookingsData || []);
-          
+
           // Fetch payments
           const { data: paymentsData } = await supabase
             .from('payments')
             .select(`
               *,
-              bookings (
+              enrollments (
                 id
               )
             `)
-            .eq('booking_id', bookingsData?.map(b => b.id) || [])
+            .in('enrollment_id', enrollmentIds)
             .order('payment_date', { ascending: false });
-            
+
           setPayments(paymentsData || []);
         }
 
@@ -180,7 +180,7 @@ const { data: enrollments, error: enrollmentsError } = await supabase
 
   const onSubmit = async (values: z.infer<typeof customerSchema>) => {
     if (!user) return;
-    
+
     setSubmitting(true);
     try {
       if (customer) {
@@ -264,12 +264,12 @@ const { data: enrollments, error: enrollmentsError } = await supabase
       });
     }
   };
-  
+
   const handleCancelBooking = (booking: any) => {
     setSelectedBooking(booking);
     setIsCancelModalOpen(true);
   };
-  
+
   const handleCancellationSubmitted = () => {
     setRefreshKey(prev => prev + 1);
   };
@@ -587,7 +587,7 @@ const { data: enrollments, error: enrollmentsError } = await supabase
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Profile Header */}
@@ -603,9 +603,10 @@ const { data: enrollments, error: enrollmentsError } = await supabase
                 <div className="flex items-center gap-2 mt-2">
                   <Badge>Active Member</Badge>
                   <Badge variant="outline">ID: {customer.id.slice(0, 8)}</Badge>
-                  {customer.customer_credit > 0 && (
-                    <Badge variant="secondary">Credits: {customer.customer_credit}</Badge>
-                  )}
+                  <Badge variant="secondary">Credits: {customer.customer_credit}</Badge>
+                  <Badge variant={customer.paq_form ? 'default' : 'destructive'}>
+                        PAQ FORM: {customer.paq_form ? 'Completed' : 'Not Completed'}
+                      </Badge>
                 </div>
               </div>
             </div>
@@ -619,8 +620,6 @@ const { data: enrollments, error: enrollmentsError } = await supabase
           <Tabs defaultValue="personal" className="space-y-6">
             <TabsList>
               <TabsTrigger value="personal">Personal Details</TabsTrigger>
-              <TabsTrigger value="medical">Medical Information</TabsTrigger>
-              <TabsTrigger value="paq">Pre-Activity Questionnaire</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
               <TabsTrigger value="payments">Payments</TabsTrigger>
             </TabsList>
@@ -642,6 +641,18 @@ const { data: enrollments, error: enrollmentsError } = await supabase
                       <dt className="text-sm text-muted-foreground">Work Mobile</dt>
                       <dd>{customer.work_mobile || 'Not provided'}</dd>
                     </div>
+ <div>
+ <dt className="text-sm text-muted-foreground">Australian Citizen</dt>
+ <dd>{customer.australian_citizen ? 'Yes' : 'No'}</dd>
+ </div>
+ <div>
+ <dt className="text-sm text-muted-foreground">Language Other Than English</dt>
+ <dd>{customer.language_other_than_english || 'None'}</dd>
+ </div>
+ <div>
+ <dt className="text-sm text-muted-foreground">English Proficiency</dt>
+ <dd>{customer.english_proficiency || 'Not specified'}</dd>
+ </div>
                   </dl>
                 </Card>
 
@@ -660,6 +671,10 @@ const { data: enrollments, error: enrollmentsError } = await supabase
                       <dt className="text-sm text-muted-foreground">Post Code</dt>
                       <dd>{customer.post_code}</dd>
                     </div>
+ <div>
+ <dt className="text-sm text-muted-foreground">Country of Birth</dt>
+ <dd>{customer.country_of_birth || 'Not provided'}</dd>
+ </div>
                   </dl>
                 </Card>
 
@@ -674,6 +689,10 @@ const { data: enrollments, error: enrollmentsError } = await supabase
                       <dt className="text-sm text-muted-foreground">Country of Birth</dt>
                       <dd>{customer.country_of_birth || 'Not provided'}</dd>
                     </div>
+ <div>
+ <dt className="text-sm text-muted-foreground">Indigenous Status</dt>
+ <dd>{customer.indigenous_status || 'Not specified'}</dd>
+ </div>
                     <div>
                       <dt className="text-sm text-muted-foreground">Occupation</dt>
                       <dd>{customer.occupation || 'Not provided'}</dd>
@@ -699,65 +718,6 @@ const { data: enrollments, error: enrollmentsError } = await supabase
                   </dl>
                 </Card>
               </div>
-            </TabsContent>
-
-            <TabsContent value="medical">
-              <div className="grid gap-6">
-                <Card className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Medical History</h3>
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium">PAQ Form Status</h4>
-                        <p className="text-sm text-muted-foreground">Pre-Activity Questionnaire</p>
-                      </div>
-                      <Badge variant={customer.paq_form ? 'default' : 'destructive'}>
-                        {customer.paq_form ? 'Completed' : 'Not Completed'}
-                      </Badge>
-                    </div>
-
-                    <div className="border-t pt-6">
-                      <h4 className="font-medium mb-4">Recent Health Updates</h4>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">Annual Health Check</p>
-                            <p className="text-sm text-muted-foreground">Last completed: Jan 15, 2024</p>
-                          </div>
-                          <Button variant="outline" size="sm">
-                            <Download className="mr-2 h-4 w-4" />
-                            Download Report
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Exercise Preferences</h3>
-                  <dl className="space-y-4">
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Reason for Class</dt>
-                      <dd>{customer.reason_for_class || 'Not specified'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">How did you hear about us?</dt>
-                      <dd>{customer.how_did_you_hear || 'Not specified'}</dd>
-                    </div>
-                  </dl>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="paq">
-              <PAQProfileForm 
-                onSubmit={handlePAQSubmit}
-                defaultValues={{
-                  fullName: `${customer.first_name} ${customer.surname}`,
-                  dateOfBirth: customer.date_of_birth,
-                }}
-              />
             </TabsContent>
 
             <TabsContent value="bookings">
@@ -794,10 +754,10 @@ const { data: enrollments, error: enrollmentsError } = await supabase
                                 </Badge>
                               )}
                               {booking.cancellation_status && (
-                                <Badge 
+                                <Badge
                                   variant={
                                     booking.cancellation_status === 'pending' ? 'secondary' :
-                                    booking.cancellation_status === 'accepted' ? 'default' : 'destructive'
+                                      booking.cancellation_status === 'accepted' ? 'default' : 'destructive'
                                   }
                                 >
                                   Cancellation: {booking.cancellation_status}
@@ -807,27 +767,27 @@ const { data: enrollments, error: enrollmentsError } = await supabase
                           </div>
                           <div className="flex gap-2">
                             {!booking.cancellation_status && (
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => handleCancelBooking(booking)}
                               >
                                 <AlertCircle className="h-4 w-4 mr-2" />
                                 Cancel
                               </Button>
-                            )}                            
+                            )}
                           </div>
                         </div>
-                        
+
                         {booking.cancellation_reason && (
                           <div className="mt-4 pt-4 border-t">
                             <p className="text-sm font-medium">Cancellation Reason:</p>
                             <p className="text-sm text-muted-foreground">{booking.cancellation_reason}</p>
                             {booking.medical_certificate_url && (
                               <div className="mt-2">
-                                <a 
-                                  href={booking.medical_certificate_url} 
-                                  target="_blank" 
+                                <a
+                                  href={booking.medical_certificate_url}
+                                  target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-sm text-primary hover:underline"
                                 >
@@ -884,7 +844,7 @@ const { data: enrollments, error: enrollmentsError } = await supabase
           </Tabs>
         </div>
       </div>
-      
+
       <CancelBookingModal
         open={isCancelModalOpen}
         onOpenChange={setIsCancelModalOpen}

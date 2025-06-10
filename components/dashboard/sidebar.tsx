@@ -51,7 +51,9 @@ const navItemPermissions = {
   'Reports': ['reports_view'],
   'Vendors': ['vendor_manage'],
   'Settings': [],  // Settings menu itself is visible to all
+  'Class Cancellation Requests': ['class_cancellation_manage'],
   'Staff': ['roles_manage'],
+  'Class Calendar': ['class_read'],
   'Roles & Permissions': ['roles_manage'],
 };
 
@@ -82,19 +84,14 @@ export function Sidebar({ className }: SidebarProps) {
       icon: LayoutDashboard,
     },
     {
-      title: 'Calendar',
-      href: '/dashboard/bookings/calendar',
-      icon: Calendar,
+      title: 'Exercise Types',
+      href: '/dashboard/exercise-types',
+      icon: Dumbbell,
     },
     {
       title: 'Classes',
       href: '/dashboard/classes',
       icon: BookOpen,
-    },
-    {
-      title: 'Exercise Types',
-      href: '/dashboard/exercise-types',
-      icon: Dumbbell,
     },
     {
       title: 'Instructors',
@@ -107,18 +104,33 @@ export function Sidebar({ className }: SidebarProps) {
       icon: Users,
     },
     {
-      title: 'Bookings',
-      icon: BookmarkCheck,
+      title: 'Enrollments',
+      icon: Newspaper,
       children: [
         {
-          title: 'Bookings',
-          href: '/dashboard/bookings',
+          title: 'Manage Enrollments',
+          href: '/dashboard/manage-enrollments',
         },
         {
-          title: 'Enrollments',
-          href: '/dashboard/enrollments',
-        }
+          title: 'Create New',
+          href: '/dashboard/create-enrollment',
+        },
       ],
+    },
+    {
+      title: 'Class Calendar',
+      href: '/dashboard/class-calendar',
+      icon: Calendar,
+    },
+    {
+      title: 'Customer Cancellation Requests',
+      href: '/dashboard/customer-cancel-requests',
+      icon: ClipboardList,
+    },
+    {
+      title: 'Instructor Cancellation Requests',
+      href: '/dashboard/class-cancellation-requests',
+      icon: ClipboardList,
     },
     {
       title: 'News & Events',

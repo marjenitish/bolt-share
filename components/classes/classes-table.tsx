@@ -97,7 +97,7 @@ export function ClassesTable({ onEdit, onView, refreshKey }: ClassesTableProps) 
               <TableHead>Class Name</TableHead>
               <TableHead>Code</TableHead>
               <TableHead>Exercise Type</TableHead>
-              <TableHead>Day Of Week</TableHead>
+              <TableHead>Class Date</TableHead>
               <TableHead>Start Time</TableHead>
               <TableHead>End Time</TableHead>
               <TableHead>Instructor</TableHead>
@@ -110,7 +110,7 @@ export function ClassesTable({ onEdit, onView, refreshKey }: ClassesTableProps) 
                 <TableCell className="font-medium">{classData.name}</TableCell>
                 <TableCell>{classData.code}</TableCell>
                 <TableCell>{classData.exercise_types?.name}</TableCell>
-                <TableCell>{classData.day_of_week}</TableCell>
+                <TableCell>{classData.date}</TableCell>
                 <TableCell>{classData.start_time}</TableCell>
                 <TableCell>{classData.end_time}</TableCell>
                 <TableCell>{classData.instructors?.name}</TableCell>

@@ -136,6 +136,10 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
             <div className="flex items-center gap-2 mt-2">
               <Badge>{customer.status}</Badge>
               <Badge variant="outline">ID: {customer.id.slice(0, 8)}</Badge>
+              <Badge variant="secondary">Credits: {customer.customer_credit}</Badge>
+              <Badge variant={customer.paq_form ? 'default' : 'destructive'}>
+                        PAQ FORM: {customer.paq_form ? 'Completed' : 'Not Completed'}
+              </Badge>
             </div>
           </div>
         </div>
@@ -145,176 +149,227 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
       <Tabs defaultValue="personal" className="space-y-6">
         <TabsList>
           <TabsTrigger value="personal">Personal Details</TabsTrigger>
-          <TabsTrigger value="medical">Medical Information</TabsTrigger>
-          <TabsTrigger value="paq">Pre-Activity Questionnaire</TabsTrigger>
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
         </TabsList>
 
         <TabsContent value="personal">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
-              <dl className="space-y-4">
-                <div>
-                  <dt className="text-sm text-muted-foreground">Email</dt>
-                  <dd>{customer.email}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">Phone</dt>
-                  <dd>{customer.contact_no || 'Not provided'}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">Work Mobile</dt>
-                  <dd>{customer.work_mobile || 'Not provided'}</dd>
-                </div>
-              </dl>
-            </Card>
-
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Address</h3>
-              <dl className="space-y-4">
-                <div>
-                  <dt className="text-sm text-muted-foreground">Street Address</dt>
-                  <dd>{customer.street_number} {customer.street_name}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">Suburb</dt>
-                  <dd>{customer.suburb}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">Post Code</dt>
-                  <dd>{customer.post_code}</dd>
-                </div>
-              </dl>
-            </Card>
-
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Personal Details</h3>
-              <dl className="space-y-4">
-                <div>
-                  <dt className="text-sm text-muted-foreground">Date of Birth</dt>
-                  <dd>{customer.date_of_birth ? format(new Date(customer.date_of_birth), 'dd/MM/yyyy') : 'Not provided'}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">Country of Birth</dt>
-                  <dd>{customer.country_of_birth || 'Not provided'}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">Occupation</dt>
-                  <dd>{customer.occupation || 'Not provided'}</dd>
-                </div>
-              </dl>
-            </Card>
-
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Next of Kin</h3>
-              <dl className="space-y-4">
-                <div>
-                  <dt className="text-sm text-muted-foreground">Name</dt>
-                  <dd>{customer.next_of_kin_name || 'Not provided'}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">Relationship</dt>
-                  <dd>{customer.next_of_kin_relationship || 'Not provided'}</dd>
-                </div>
-                <div>
-                  <dt className="text-sm text-muted-foreground">Contact</dt>
-                  <dd>{customer.next_of_kin_mobile || customer.next_of_kin_phone || 'Not provided'}</dd>
-                </div>
-              </dl>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="medical">
-          <div className="grid gap-6">
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Medical History</h3>
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">PAQ Form Status</h4>
-                    <p className="text-sm text-muted-foreground">Pre-Activity Questionnaire</p>
-                  </div>
-                  <Badge variant={customer.paq_form ? 'default' : 'destructive'}>
-                    {customer.paq_form ? 'Completed' : 'Not Completed'}
-                  </Badge>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="paq">
-          <PAQProfileForm 
-            onSubmit={() => {}}
-            defaultValues={{
-              fullName: `${customer.first_name} ${customer.surname}`,
-              dateOfBirth: customer.date_of_birth,
-            }}
-            readOnly
-          />
-        </TabsContent>
-
-        <TabsContent value="bookings">
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Bookings History</h3>
-            {bookings.length > 0 ? (
-              <div className="space-y-4">
-                {bookings.map((booking) => (
-                  <div key={booking.id} className="flex items-center justify-between border-b pb-4">
+              <div className="grid gap-6 md:grid-cols-2">
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
+                  <dl className="space-y-4">
                     <div>
-                      <p className="font-medium">{booking.classes?.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {getDayName(booking.classes?.day_of_week)} at {booking.classes?.start_time}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {booking.classes?.venue} • {booking.classes?.instructors?.name}
-                      </p>
+                      <dt className="text-sm text-muted-foreground">Email</dt>
+                      <dd>{customer.email}</dd>
                     </div>
-                    <Badge variant={booking.is_free_trial ? 'secondary' : 'default'}>
-                      {booking.is_free_trial ? 'Trial' : booking.term}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">No bookings found.</p>
-            )}
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="payments">
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Payment History</h3>
-            {payments.length > 0 ? (
-              <div className="space-y-4">
-                {payments.map((payment) => (
-                  <div key={payment.id} className="flex items-center justify-between border-b pb-4">
                     <div>
-                      <p className="font-medium">Receipt #{payment.receipt_number}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(payment.payment_date), 'dd/MM/yyyy HH:mm')}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {payment.bookings?.classes?.name}
-                      </p>
+                      <dt className="text-sm text-muted-foreground">Phone</dt>
+                      <dd>{customer.contact_no || 'Not provided'}</dd>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">${payment.amount.toFixed(2)}</p>
-                      <Badge variant={payment.payment_status === 'completed' ? 'default' : 'secondary'}>
-                        {payment.payment_status}
-                      </Badge>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Work Mobile</dt>
+                      <dd>{customer.work_mobile || 'Not provided'}</dd>
                     </div>
-                  </div>
-                ))}
+ <div>
+ <dt className="text-sm text-muted-foreground">Australian Citizen</dt>
+ <dd>{customer.australian_citizen ? 'Yes' : 'No'}</dd>
+ </div>
+ <div>
+ <dt className="text-sm text-muted-foreground">Language Other Than English</dt>
+ <dd>{customer.language_other_than_english || 'None'}</dd>
+ </div>
+ <div>
+ <dt className="text-sm text-muted-foreground">English Proficiency</dt>
+ <dd>{customer.english_proficiency || 'Not specified'}</dd>
+ </div>
+                  </dl>
+                </Card>
+
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Address</h3>
+                  <dl className="space-y-4">
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Street Address</dt>
+                      <dd>{customer.street_number} {customer.street_name}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Suburb</dt>
+                      <dd>{customer.suburb}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Post Code</dt>
+                      <dd>{customer.post_code}</dd>
+                    </div>
+ <div>
+ <dt className="text-sm text-muted-foreground">Country of Birth</dt>
+ <dd>{customer.country_of_birth || 'Not provided'}</dd>
+ </div>
+                  </dl>
+                </Card>
+
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Personal Details</h3>
+                  <dl className="space-y-4">
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Date of Birth</dt>
+                      <dd>{customer.date_of_birth ? format(new Date(customer.date_of_birth), 'dd/MM/yyyy') : 'Not provided'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Country of Birth</dt>
+                      <dd>{customer.country_of_birth || 'Not provided'}</dd>
+                    </div>
+ <div>
+ <dt className="text-sm text-muted-foreground">Indigenous Status</dt>
+ <dd>{customer.indigenous_status || 'Not specified'}</dd>
+ </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Occupation</dt>
+                      <dd>{customer.occupation || 'Not provided'}</dd>
+                    </div>
+                  </dl>
+                </Card>
+
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Emergency Contact</h3>
+                  <dl className="space-y-4">
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Name</dt>
+                      <dd>{customer.next_of_kin_name || 'Not provided'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Relationship</dt>
+                      <dd>{customer.next_of_kin_relationship || 'Not provided'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Contact</dt>
+                      <dd>{customer.next_of_kin_mobile || customer.next_of_kin_phone || 'Not provided'}</dd>
+                    </div>
+                  </dl>
+                </Card>
               </div>
-            ) : (
-              <p className="text-muted-foreground">No payment records found.</p>
-            )}
-          </Card>
-        </TabsContent>
+            </TabsContent>
+
+            <TabsContent value="bookings">
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Your Bookings</h3>
+                {bookings.length > 0 ? (
+                  <div className="space-y-6">
+                    {bookings.map((booking) => (
+                      <div key={booking.id} className="border rounded-lg p-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-lg">{booking.classes?.name}</h4>
+                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                              <div className="flex items-center">
+                                <Calendar className="h-4 w-4 mr-1" />
+                                {getDayName(booking.classes?.day_of_week)}
+                              </div>
+                              <div className="flex items-center">
+                                <Clock className="h-4 w-4 mr-1" />
+                                {booking.classes?.start_time} - {booking.classes?.end_time}
+                              </div>
+                              <div className="flex items-center">
+                                <MapPin className="h-4 w-4 mr-1" />
+                                {booking.classes?.venue}
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              <Badge variant={booking.is_free_trial ? 'secondary' : 'default'}>
+                                {booking.is_free_trial ? 'Trial' : booking.term}
+                              </Badge>
+                              {booking.booking_date && (
+                                <Badge variant="outline">
+                                  {format(new Date(booking.booking_date), 'dd/MM/yyyy')}
+                                </Badge>
+                              )}
+                              {booking.cancellation_status && (
+                                <Badge
+                                  variant={
+                                    booking.cancellation_status === 'pending' ? 'secondary' :
+                                      booking.cancellation_status === 'accepted' ? 'default' : 'destructive'
+                                  }
+                                >
+                                  Cancellation: {booking.cancellation_status}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            {!booking.cancellation_status && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCancelBooking(booking)}
+                              >
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                Cancel
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        {booking.cancellation_reason && (
+                          <div className="mt-4 pt-4 border-t">
+                            <p className="text-sm font-medium">Cancellation Reason:</p>
+                            <p className="text-sm text-muted-foreground">{booking.cancellation_reason}</p>
+                            {booking.medical_certificate_url && (
+                              <div className="mt-2">
+                                <a
+                                  href={booking.medical_certificate_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-primary hover:underline"
+                                >
+                                  View Medical Certificate
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">You don't have any bookings yet.</p>
+                    <Button className="mt-4" asChild>
+                      <a href="/search">Find Classes</a>
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="payments">
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Payment History</h3>
+                {payments.length > 0 ? (
+                  <div className="space-y-4">
+                    {payments.map((payment) => (
+                      <div key={payment.id} className="flex items-center justify-between border-b pb-4">
+                        <div>
+                          <p className="font-medium">Receipt #{payment.receipt_number}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(payment.payment_date), 'dd/MM/yyyy HH:mm')}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {payment.bookings?.classes?.name}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">${payment.amount.toFixed(2)}</p>
+                          <Badge variant={payment.payment_status === 'completed' ? 'default' : 'secondary'}>
+                            {payment.payment_status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No payment records found.</p>
+                )}
+              </Card>
+            </TabsContent>
       </Tabs>
     </div>
   );

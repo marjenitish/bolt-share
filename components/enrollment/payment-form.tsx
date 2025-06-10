@@ -19,9 +19,10 @@ interface CheckoutFormProps {
   enrollmentId: string;
   onComplete: () => void;
   totalAmount: number;
+  customer: any;
 }
 
-function CheckoutForm({ selectedClasses, enrollmentData, enrollmentId, onComplete, totalAmount }: CheckoutFormProps) {
+function CheckoutForm({ selectedClasses, enrollmentData, enrollmentId, onComplete, totalAmount, customer }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -54,9 +55,10 @@ function CheckoutForm({ selectedClasses, enrollmentData, enrollmentId, onComplet
           amount: Math.round(totalAmount * 100),
           currency: 'aud',
           metadata: {
+            selectedClasses: selectedClasses.map(cls => cls.id).join(','),
             enrollmentId: enrollmentId,
-            customerEmail: enrollmentData.email,
-            customerName: `${enrollmentData.firstName} ${enrollmentData.lastName}`,
+            customerEmail: customer.email,
+            customerName: `${customer.first_name} ${customer.surname}`,
             classCount: selectedClasses.length,
             classIds: selectedClasses.map(cls => cls.id).join(',')
           },
@@ -132,9 +134,10 @@ interface PaymentFormProps {
   enrollmentData: any;
   enrollmentId: string;
   onComplete: () => void;
+  customer: any;
 }
 
-export function PaymentForm({ selectedClasses, enrollmentData, enrollmentId, onComplete }: PaymentFormProps) {
+export function PaymentForm({ selectedClasses, enrollmentData, enrollmentId, onComplete, customer }: PaymentFormProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -226,6 +229,7 @@ export function PaymentForm({ selectedClasses, enrollmentData, enrollmentId, onC
                   enrollmentId={enrollmentId}
                   onComplete={onComplete}
                   totalAmount={totalAmount}
+                  customer={customer}
                 />
               </Elements>
             ) : (

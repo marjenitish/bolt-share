@@ -9,6 +9,7 @@ import { ClassDetails } from '@/components/classes/class-details';
 import { useToast } from '@/hooks/use-toast';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { usePermissions } from '@/components/providers/permission-provider';
+import { addDays, eachDayOfInterval, format, getDay, isMonday, parseISO } from 'date-fns';
 
 export default function ClassesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -66,24 +67,78 @@ export default function ClassesPage() {
           description: 'Class updated successfully',
         });
       } else {
-        // Create new class
-        const { error } = await supabase.from('classes').insert([{
-          name: data.name,
-          code: data.code,
-          exercise_type_id: data.exerciseTypeId,
-          venue: data.venue,
-          address: data.address,
-          zip_code: data.zipCode,
-          day_of_week: data.dayOfWeek,
-          start_time: data.startTime,
-          end_time: data.endTime,
-          instructor_id: data.instructorId,
-          fee_criteria: data.feeCriteria,
-          fee_amount: data.feeAmount,
-          term: data.term,
-        }]);
 
-        if (error) throw error;
+        // Create Classes
+        const values = data
+
+        try {
+          // Determine the date range based on the selected term (for 2025)
+          let startDate: Date;
+          let endDate: Date;
+
+          switch (values.term) {
+            case 'Term1':
+              startDate = new Date('2025-01-01');
+              endDate = new Date('2025-03-31');
+              break;
+            case 'Term2':
+              startDate = new Date('2025-04-01');
+              endDate = new Date('2025-06-30');
+              break;
+            case 'Term3':
+              startDate = new Date('2025-07-01');
+              endDate = new Date('2025-09-30');
+              break;
+            case 'Term4':
+              startDate = new Date('2025-10-01');
+              endDate = new Date('2025-12-31');
+              break;
+            default:
+              throw new Error('Invalid term selected');
+          }
+
+          // Get all dates for the selected day of week within the term
+          const allDates = eachDayOfInterval({ start: startDate, end: endDate });
+          const classDates = allDates.filter(date => getDay(date) === values.dayOfWeek);
+
+          // Prepare the classes to be inserted
+          const classesToInsert = classDates.map(date => ({
+            name: values.name,
+            code: values.code,
+            exercise_type_id: values.exerciseTypeId,
+            venue: values.venue,
+            address: values.address,
+            zip_code: values.zipCode,
+            day_of_week: values.dayOfWeek,
+            start_time: values.startTime,
+            end_time: values.endTime,
+            instructor_id: values.instructorId,
+            fee_criteria: values.feeCriteria,
+            fee_amount: values.feeAmount,
+            term: values.term,
+            date: format(date, 'yyyy-MM-dd'),
+            is_recurring: true,
+          }));
+
+          // Insert all classes in a transaction
+          const { data, error } = await supabase
+            .from('classes')
+            .insert(classesToInsert)
+            .select();
+
+          if (error) {
+            throw error;
+          }
+
+          // Handle success (refresh data, close modal, etc.)
+          console.log('Classes created successfully:', data);
+          // Add your success handling here (e.g., toast notification, closing modal, refreshing data)
+
+        } catch (error) {
+          console.error('Error creating classes:', error);
+          // Add your error handling here (e.g., toast notification)
+        }
+
 
         toast({
           title: 'Success',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -16,9 +16,11 @@ import {
   TableRow,
   TableFooter
 } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Plus, Eye } from 'lucide-react';
 import { BookingModal } from './booking-modal';
+import { ClassCancellationModal } from './class-cancellation-modal';
 import { BookingDetailsSheet } from './booking-details-sheet';
 import { useToast } from '@/hooks/use-toast';
 import { createBrowserClient } from '@/lib/supabase/client';
@@ -39,9 +41,12 @@ export function ClassBookingsModalForInstructor({
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { toast } = useToast();
+  const [isCancellationModalOpen, setIsCancellationModalOpen] = useState(false);
   const supabase = createBrowserClient();
+  const [cancellationStatus, setCancellationStatus] = useState<string | null>(null);
 
   const [attendance, setAttendance] = useState<{ [key: string]: boolean }>({});
+  console.log("classDataFromModal", classData)
 
   // Initialize attendance state when classData changes
   useState(() => {
@@ -53,60 +58,35 @@ export function ClassBookingsModalForInstructor({
       setAttendance(initialAttendance);
     }
   }, [classData]);
+
+  useEffect(() => {
+    console.log('class_cancellation_requests', "xxx")
+    
+    const fetchCancellationStatus = async () => {
+      if (classData?.id && classData?.currentDate) {
+        const currentDate = new Date(classData.currentDate).toLocaleDateString('en-CA', {
+          timeZone: 'Asia/Kathmandu',
+        });
+        const { data, error } = await supabase
+          .from('class_cancellation_requests')
+          .select('status')
+          .eq('class_id', classData.id)
+          .eq('cancellation_date', currentDate)
+          .single();
+        console.log('class_cancellation_requests', data)
+        if (data) {
+          setCancellationStatus(data.status);
+        }
+      }
+    };
+    fetchCancellationStatus()
+  }, [classData]);
+
+
   if (!classData) return null;
 
-  const handleCancelBooking = async (data: any) => {
-    console.log("cancel booking data", data)
-  };
-
-  const handleViewDetails = async (booking: any) => {
-    try {
-      // Fetch the complete booking data including payments
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          enrollments (
-            id,
-            customer_id,
-            enrollment_type,
-            customers (
-              id,
-              surname,
-              first_name
-            )
-          ),
-          classes (
-            id,
-            name,
-            fee_amount,
-            instructor_id,
-            instructors (
-              id,
-              name
-            )
-          ),
-          payments (
-            id,
-            amount,
-            payment_method,
-            payment_status,
-            payment_date,
-            receipt_number,
-            transaction_id,
-            notes
-          )
-        `)
-        .eq('id', booking.id)
-        .single();
-
-      if (error) throw error;
-
-      setSelectedBooking(data);
-      setIsDetailsOpen(true);
-    } catch (error) {
-      console.error('Error fetching booking details:', error);
-    }
+  const handleCancellationSuccess = () => {
+    setIsCancellationModalOpen(false);
   };
 
   const handleAttendanceChange = (bookingId: string, isChecked: boolean) => {
@@ -149,7 +129,7 @@ export function ClassBookingsModalForInstructor({
           <DialogHeader>
             <DialogTitle>Class Bookings - {classData.name}</DialogTitle>
           </DialogHeader>
-          
+
           <div className="mt-4">
             <div className="mb-4 flex items-center justify-between">
               <div className="space-y-1">
@@ -160,17 +140,26 @@ export function ClassBookingsModalForInstructor({
                   Instructor: {classData.instructors?.name}
                 </p>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => handleCancelBooking("cancel")}
-                className="h-8"
-              >
-                <Plus className="mr-1 h-3 w-3" />
-                Cancel
-              </Button>
+              {cancellationStatus === null ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCancellationModalOpen(true)}
+                  className="h-8"
+                >
+                  <Plus className="mr-1 h-3 w-3" />
+                  Cancel
+                </Button>
+              ) : null}
+              {cancellationStatus === "pending" ? (
+                <Badge variant='secondary'>PENDING CANCELLATION</Badge>
+              ) : null}
+              {cancellationStatus === "accepted" ? (
+                <Badge variant='destructive'>Cancelled</Badge>
+              ) : null}
             </div>
-
+            {
+            cancellationStatus != "accepted" ? (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -190,13 +179,13 @@ export function ClassBookingsModalForInstructor({
                       const bookingDate = booking.booking_date;
                       const currentDate = new Date(classData.currentDate).toLocaleDateString('en-CA', {
                         timeZone: 'Asia/Kathmandu',
-                      });                      
+                      });
                       return bookingDate === currentDate;
                     })
                     .map((booking: any, index: number) => (
                       <TableRow key={booking.id}>
                         <TableCell>
-                          {index+1}
+                          {index + 1}
                         </TableCell>
                         <TableCell>
                           {booking.enrollments?.customers?.surname}, {booking.enrollments?.customers?.first_name}
@@ -215,7 +204,7 @@ export function ClassBookingsModalForInstructor({
                           />
                         </TableCell>
                       </TableRow>
-                  ))}
+                    ))}
 
                   {!classData.bookings?.length && (
                     <TableRow>
@@ -234,9 +223,21 @@ export function ClassBookingsModalForInstructor({
               )}
 
             </div>
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>
+
+      <ClassCancellationModal
+        open={isCancellationModalOpen}
+        onOpenChange={setIsCancellationModalOpen}
+        classId={classData.id}
+        instructorId={classData.instructor_id}
+        cancellationDate={new Date(classData.currentDate).toLocaleDateString('en-CA', {
+          timeZone: 'Asia/Kathmandu',
+        })}
+        onCancelSuccess={handleCancellationSuccess}
+      />
     </>
   );
 }
