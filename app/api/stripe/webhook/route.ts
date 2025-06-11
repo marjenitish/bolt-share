@@ -98,10 +98,7 @@ export async function POST(req: Request) {
         }
 
         // 3. Create payment row
-        const { data: receiptNumber, error: receiptError } = await supabase
-          .rpc('generate_receipt_number'); // Assuming you have this Supabase function
-
-        if (receiptError) throw receiptError;
+        const receiptNumber = Math.floor(10000000 + Math.random() * 90000000).toString();
 
          // Insert payment record
          const { error: paymentError } = await supabase
