@@ -81,6 +81,41 @@ export default function EnrollPage() {
       } else {
         setCustomer(customerProfile);
       }
+
+      if (!customerProfile) {
+        toast({
+          title: 'Profile Incomplete',
+          description:
+            'Please complete your customer profile before enrolling.',
+          variant: 'destructive',
+        });
+        router.push('/profile'); // Redirect to profile to complete
+        return;
+      }
+  
+      if (customerProfile.paq_status == 'pending') {
+        toast({
+          title: 'PAQ Form in review',
+          description:
+            'Your PAQ Form is in review.',
+          variant: 'destructive',
+        });
+        router.push('/profile'); // Redirect to profile to complete
+        return;
+      }
+  
+      if (customerProfile.paq_status == 'rejected' || customerProfile.paq_status == null) {
+        toast({
+          title: 'PAQ Form not uploaded.',
+          description:
+            'Your PAQ Form not uploaded.',
+          variant: 'destructive',
+        });
+        router.push('/profile'); // Redirect to profile to complete
+        return;
+      }
+
+
       setLoadingCustomer(false);
     };
 
@@ -119,6 +154,7 @@ export default function EnrollPage() {
     setTotalAmount(calculatedTotal);
   }, [selectedClasses]);
 
+
   const handleClassSelect = (classData: any) => {
     setSelectedClasses((prevSelected) => {
       const isSelected = prevSelected.some((cls) => cls.id === classData.id);
@@ -141,6 +177,30 @@ export default function EnrollPage() {
       router.push('/profile'); // Redirect to profile to complete
       return;
     }
+
+    if (customer.paq_status == 'pending') {
+      toast({
+        title: 'PAQ Form in review',
+        description:
+          'Your PAQ Form is in review.',
+        variant: 'destructive',
+      });
+      router.push('/profile'); // Redirect to profile to complete
+      return;
+    }
+
+    if (customer.paq_status == 'rejected' || customer.paq_status == null) {
+      toast({
+        title: 'PAQ Form not uploaded.',
+        description:
+          'Your PAQ Form not uploaded.',
+        variant: 'destructive',
+      });
+      router.push('/profile'); // Redirect to profile to complete
+      return;
+    }
+
+
 
     if (selectedClasses.length === 0) {
       toast({
@@ -195,6 +255,8 @@ export default function EnrollPage() {
     });
     router.push('/profile?tab=bookings'); // Redirect to customer profile bookings tab
   };
+
+
 
   return (
     <div className="min-h-screen bg-background">

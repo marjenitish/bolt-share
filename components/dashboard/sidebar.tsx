@@ -104,6 +104,11 @@ export function Sidebar({ className }: SidebarProps) {
       icon: Users,
     },
     {
+      title: 'PAQ Reviews',
+      href: '/dashboard/paq-reviews',
+      icon: Users,
+    },
+    {
       title: 'Enrollments',
       icon: Newspaper,
       children: [

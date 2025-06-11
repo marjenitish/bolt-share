@@ -25,9 +25,11 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Download, Edit, Calendar, Clock, MapPin, AlertCircle } from 'lucide-react';
 import { PAQProfileForm } from '@/components/profile/paq-profile-form';
 import { CancelBookingModal } from '@/components/bookings/cancel-booking-modal';
+import { PAQModal } from '@/components/profile/paq-modal';
 import { format } from 'date-fns';
 import { TerminationModal } from '@/components/customers/termination-modal';
 import { getDayName } from '@/lib/utils';
+import Link from 'next/link';
 
 const customerSchema = z.object({
   surname: z.string().min(1, 'Surname is required'),
@@ -65,6 +67,7 @@ export default function ProfilePage() {
   const [payments, setPayments] = useState<any[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isPAQModalOpen, setIsPAQModalOpen] = useState(false);
   const [terminationRequest, setTerminationRequest] = useState<any>(null);
   const [isTerminationModalOpen, setIsTerminationModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -172,13 +175,13 @@ export default function ProfilePage() {
 
           // Fetch active termination request
           const { data: terminationData, error: terminationError } = await supabase
- .from('terminations')
- .select('*')
- .eq('customer_id', customerProfile.id)
- .in('status', ['pending', 'accepted']) // Assuming these are the statuses for active requests
- .single();
+            .from('terminations')
+            .select('*')
+            .eq('customer_id', customerProfile.id)
+            .in('status', ['pending', 'accepted']) // Assuming these are the statuses for active requests
+            .single();
 
- if (!terminationError && terminationData) setTerminationRequest(terminationData);
+          if (!terminationError && terminationData) setTerminationRequest(terminationData);
         }
 
         setLoading(false);
@@ -243,39 +246,7 @@ export default function ProfilePage() {
   };
 
   const handlePAQSubmit = async (data: any) => {
-    try {
-      if (!customer?.id) {
-        throw new Error('Customer profile not found');
-      }
-
-      const { error } = await supabase
-        .from('customers')
-        .update({
-          paq_form: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', customer.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Success',
-        description: 'PAQ form submitted successfully',
-      });
-
-      // Update local state
-      setCustomer({
-        ...customer,
-        paq_form: true
-      });
-
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
+    setIsPAQModalOpen(false);
   };
 
   const handleCancelBooking = (booking: any) => {
@@ -290,6 +261,20 @@ export default function ProfilePage() {
   const handleTerminationSuccess = () => {
     setIsTerminationModalOpen(false);
     // Optionally refresh customer data if needed, or rely on the modal's toast for feedback
+  };
+
+  const openImageLink = async (fileName: string) => {
+    const { data, error } = await supabase
+      .storage
+      .from('customers')
+      .createSignedUrl(fileName, 10);
+  
+    if (data?.signedUrl) {
+      //const fullUrl = `https://pfoargdymscqqrekzref.supabase.co${data.signedUrl}`;
+      window.open(data.signedUrl, '_blank');
+    } else {
+      console.error('Failed to generate signed URL:', error?.message);
+    }
   };
 
   if (loading) {
@@ -610,6 +595,19 @@ export default function ProfilePage() {
         <div className="max-w-4xl mx-auto">
           {/* Profile Header */}
           <div className="flex items-start justify-between mb-8">
+
+            <div className="flex items-center gap-6"></div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setEditing(true)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Profile
+              </Button>
+              <Button variant="destructive" onClick={() => setIsTerminationModalOpen(true)} disabled={!!terminationRequest}>
+                {!terminationRequest ? "Terminate Account" : `Terminate: ${terminationRequest.status}`}
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-start justify-between mb-8">
             <div className="flex items-center gap-6">
               <Avatar className="h-24 w-24">
                 <AvatarImage src={userProfile?.avatar_url} alt={userProfile?.full_name} />
@@ -622,22 +620,28 @@ export default function ProfilePage() {
                   <Badge>Active Member</Badge>
                   <Badge variant="outline">ID: {customer.id.slice(0, 8)}</Badge>
                   <Badge variant="secondary">Credits: {customer.customer_credit}</Badge>
-                  <Badge variant={customer.paq_form ? 'default' : 'destructive'}>
-                    PAQ FORM: {customer.paq_form ? 'Completed' : 'Not Completed'}
+
+                  {customer.paq_status == 'pending' ?
+                    <Badge variant={'destructive'} onClick={() => openImageLink(customer.paq_document_url)}>
+                    PAQ FORM: In-Review
                   </Badge>
+                    : null}
+
+                  {customer.paq_status == 'accepted' ?
+                    <Badge variant={'default'}>
+                      PAQ FORM: Completed
+                    </Badge>
+                    : null}
+
+                  {(customer.paq_status == 'rejected' || customer.paq_status == null) ?
+                    <Badge variant={'destructive'} onClick={() => setIsPAQModalOpen(true)}>
+                      PAQ FORM: {'Not Completed'}
+                    </Badge>
+                    : null}
+
                 </div>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setEditing(true)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Profile
-              </Button>
-              <Button variant="destructive" onClick={() => setIsTerminationModalOpen(true)} disabled={!!terminationRequest}>
-                {!terminationRequest ? "Terminate Account" : `Terminate: ${terminationRequest.status}`}                  
-              </Button>
-            </div>
-
           </div>
 
           {/* Profile Content */}
@@ -880,6 +884,12 @@ export default function ProfilePage() {
         onOpenChange={setIsTerminationModalOpen}
         customerId={customer?.id}
         onTerminationSuccess={handleTerminationSuccess}
+      />
+      <PAQModal
+        open={isPAQModalOpen}
+        onOpenChange={setIsPAQModalOpen}
+        customerId={customer?.id}
+        onCancel={handlePAQSubmit}
       />
     </div>
   );
