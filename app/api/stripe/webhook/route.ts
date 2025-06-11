@@ -44,7 +44,11 @@ export async function POST(req: Request) {
         break;
 
       case 'payment_intent.succeeded':
+
+        console.log("payment_intent.succeeded")
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
+
+        console.log("paymentIntent", paymentIntent)
 
         const enrollmentId = paymentIntent.metadata.enrollmentId;
         const selectedClassIdsString = paymentIntent.metadata.selectedClasses;
@@ -61,6 +65,8 @@ export async function POST(req: Request) {
           .eq('id', enrollmentId);
 
         if (enrollmentUpdateError) throw enrollmentUpdateError;
+        
+        console.log("Create bookings")
 
         // 2. Create bookings for each selected class
         const selectedClassIds = selectedClassIdsString.split(',');
@@ -97,9 +103,12 @@ export async function POST(req: Request) {
           if (bookingsError) throw bookingsError;
         }
 
+        console.log("3. Create payment row")
+
         // 3. Create payment row
         const receiptNumber = Math.floor(10000000 + Math.random() * 90000000).toString();
 
+        console.log("receiptNumber generated", receiptNumber)
          // Insert payment record
          const { error: paymentError } = await supabase
          .from('payments')
@@ -113,6 +122,8 @@ export async function POST(req: Request) {
            payment_date: new Date().toISOString(),
            notes: `Payment for class: ${enrollmentId}`,
          });
+
+          console.log("paymentError", paymentError)
          if(paymentError) throw paymentError;
         break;
 
