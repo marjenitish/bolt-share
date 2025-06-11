@@ -26,6 +26,7 @@ import { Loader2, Download, Edit, Calendar, Clock, MapPin, AlertCircle } from 'l
 import { PAQProfileForm } from '@/components/profile/paq-profile-form';
 import { CancelBookingModal } from '@/components/bookings/cancel-booking-modal';
 import { format } from 'date-fns';
+import { TerminationModal } from '@/components/customers/termination-modal';
 import { getDayName } from '@/lib/utils';
 
 const customerSchema = z.object({
@@ -64,6 +65,8 @@ export default function ProfilePage() {
   const [payments, setPayments] = useState<any[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [terminationRequest, setTerminationRequest] = useState<any>(null);
+  const [isTerminationModalOpen, setIsTerminationModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const { toast } = useToast();
   const supabase = createBrowserClient();
@@ -166,6 +169,16 @@ export default function ProfilePage() {
             .order('payment_date', { ascending: false });
 
           setPayments(paymentsData || []);
+
+          // Fetch active termination request
+          const { data: terminationData, error: terminationError } = await supabase
+ .from('terminations')
+ .select('*')
+ .eq('customer_id', customerProfile.id)
+ .in('status', ['pending', 'accepted']) // Assuming these are the statuses for active requests
+ .single();
+
+ if (!terminationError && terminationData) setTerminationRequest(terminationData);
         }
 
         setLoading(false);
@@ -272,6 +285,11 @@ export default function ProfilePage() {
 
   const handleCancellationSubmitted = () => {
     setRefreshKey(prev => prev + 1);
+  };
+
+  const handleTerminationSuccess = () => {
+    setIsTerminationModalOpen(false);
+    // Optionally refresh customer data if needed, or rely on the modal's toast for feedback
   };
 
   if (loading) {
@@ -605,15 +623,21 @@ export default function ProfilePage() {
                   <Badge variant="outline">ID: {customer.id.slice(0, 8)}</Badge>
                   <Badge variant="secondary">Credits: {customer.customer_credit}</Badge>
                   <Badge variant={customer.paq_form ? 'default' : 'destructive'}>
-                        PAQ FORM: {customer.paq_form ? 'Completed' : 'Not Completed'}
-                      </Badge>
+                    PAQ FORM: {customer.paq_form ? 'Completed' : 'Not Completed'}
+                  </Badge>
                 </div>
               </div>
             </div>
-            <Button variant="outline" onClick={() => setEditing(true)}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Profile
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setEditing(true)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Profile
+              </Button>
+              <Button variant="destructive" onClick={() => setIsTerminationModalOpen(true)} disabled={!!terminationRequest}>
+                {!terminationRequest ? "Terminate Account" : `Terminate: ${terminationRequest.status}`}                  
+              </Button>
+            </div>
+
           </div>
 
           {/* Profile Content */}
@@ -641,18 +665,18 @@ export default function ProfilePage() {
                       <dt className="text-sm text-muted-foreground">Work Mobile</dt>
                       <dd>{customer.work_mobile || 'Not provided'}</dd>
                     </div>
- <div>
- <dt className="text-sm text-muted-foreground">Australian Citizen</dt>
- <dd>{customer.australian_citizen ? 'Yes' : 'No'}</dd>
- </div>
- <div>
- <dt className="text-sm text-muted-foreground">Language Other Than English</dt>
- <dd>{customer.language_other_than_english || 'None'}</dd>
- </div>
- <div>
- <dt className="text-sm text-muted-foreground">English Proficiency</dt>
- <dd>{customer.english_proficiency || 'Not specified'}</dd>
- </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Australian Citizen</dt>
+                      <dd>{customer.australian_citizen ? 'Yes' : 'No'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Language Other Than English</dt>
+                      <dd>{customer.language_other_than_english || 'None'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">English Proficiency</dt>
+                      <dd>{customer.english_proficiency || 'Not specified'}</dd>
+                    </div>
                   </dl>
                 </Card>
 
@@ -671,10 +695,10 @@ export default function ProfilePage() {
                       <dt className="text-sm text-muted-foreground">Post Code</dt>
                       <dd>{customer.post_code}</dd>
                     </div>
- <div>
- <dt className="text-sm text-muted-foreground">Country of Birth</dt>
- <dd>{customer.country_of_birth || 'Not provided'}</dd>
- </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Country of Birth</dt>
+                      <dd>{customer.country_of_birth || 'Not provided'}</dd>
+                    </div>
                   </dl>
                 </Card>
 
@@ -689,10 +713,10 @@ export default function ProfilePage() {
                       <dt className="text-sm text-muted-foreground">Country of Birth</dt>
                       <dd>{customer.country_of_birth || 'Not provided'}</dd>
                     </div>
- <div>
- <dt className="text-sm text-muted-foreground">Indigenous Status</dt>
- <dd>{customer.indigenous_status || 'Not specified'}</dd>
- </div>
+                    <div>
+                      <dt className="text-sm text-muted-foreground">Indigenous Status</dt>
+                      <dd>{customer.indigenous_status || 'Not specified'}</dd>
+                    </div>
                     <div>
                       <dt className="text-sm text-muted-foreground">Occupation</dt>
                       <dd>{customer.occupation || 'Not provided'}</dd>
@@ -850,6 +874,12 @@ export default function ProfilePage() {
         onOpenChange={setIsCancelModalOpen}
         booking={selectedBooking}
         onCancel={handleCancellationSubmitted}
+      />
+      <TerminationModal
+        open={isTerminationModalOpen}
+        onOpenChange={setIsTerminationModalOpen}
+        customerId={customer?.id}
+        onTerminationSuccess={handleTerminationSuccess}
       />
     </div>
   );

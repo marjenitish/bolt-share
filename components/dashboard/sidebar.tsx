@@ -133,6 +133,11 @@ export function Sidebar({ className }: SidebarProps) {
       icon: ClipboardList,
     },
     {
+      title: 'Manage Terminations',
+      href: '/dashboard/manage-terminations',
+      icon: ClipboardList,
+    },
+    {
       title: 'News & Events',
       icon: Newspaper,
       children: [
