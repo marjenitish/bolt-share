@@ -113,6 +113,7 @@ export async function POST(req: Request) {
            payment_date: new Date().toISOString(),
            notes: `Payment for class: ${enrollmentId}`,
          });
+         if(paymentError) throw paymentError;
         break;
 
       case 'payment_intent.payment_failed':
