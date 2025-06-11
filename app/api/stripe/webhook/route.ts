@@ -114,7 +114,7 @@ export async function POST(req: Request) {
          .from('payments')
          .insert({
            enrollment_id: enrollmentId,
-           amount: paymentIntent.amount,
+           amount: paymentIntent.amount/100,
            payment_method: 'stripe',
            payment_status: 'completed',
            transaction_id: paymentIntent.id,
