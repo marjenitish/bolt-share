@@ -178,6 +178,10 @@ export function Sidebar({ className }: SidebarProps) {
           title: 'Roles & Permissions',
           href: '/dashboard/roles-permissions',
         },
+        {
+          title: 'Emailing Lists',
+          href: '/dashboard/emailing-lists',
+        },
       ],
     },
   ];

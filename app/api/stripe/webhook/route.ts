@@ -60,19 +60,6 @@ export async function POST(req: Request) {
           })
           .eq('id', enrollmentId);
 
-        // Update enrollment status
-        const { error: successError } = await supabase
-          .from('enrollments')
-          .update({
-            payment_status: 'paid',
-            payment_intent: paymentIntent.id,
-            status: 'active',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', paymentIntent.metadata.enrollmentId);
-
-        if (successError) throw successError;
-
         if (enrollmentUpdateError) throw enrollmentUpdateError;
 
         // 2. Create bookings for each selected class
