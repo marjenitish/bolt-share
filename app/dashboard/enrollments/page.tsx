@@ -97,7 +97,7 @@ export default function EnrollmentsPage() {
       sum + (booking.classes?.fee_amount || 0), 0) || 0;
   };
 
-  const canCreateEnrollment = hasPermission('booking_create');
+  const canCreateEnrollment = hasPermission('create_enrollments');
 
   if (loading) {
     return (

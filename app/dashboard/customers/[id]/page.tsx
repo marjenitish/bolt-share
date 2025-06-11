@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { PAQProfileForm } from '@/components/profile/paq-profile-form';
 import { getDayName } from '@/lib/utils';
 import { Calendar, Clock, MapPin, AlertCircle } from 'lucide-react';
+import { usePermissions } from '@/components/providers/permission-provider';
 
 export default function CustomerDetailsPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
@@ -24,6 +25,9 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createBrowserClient();
+
+
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     const fetchCustomerData = async () => {
@@ -123,6 +127,19 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
 
     fetchCustomerData();
   }, [params.id]);
+
+  const canRead = hasPermission('customer_read');
+
+  if (!canRead) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+          <p className="text-muted-foreground">You don't have permission to manage CMS content.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

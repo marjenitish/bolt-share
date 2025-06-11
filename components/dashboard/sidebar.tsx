@@ -39,11 +39,11 @@ const navItemPermissions = {
   'Dashboard': [],  // Everyone can see dashboard
   'Calendar': ['class_read'],
   'Classes': ['class_read'],
-  'Exercise Types': ['class_read'],
+  'Exercise Types': ['exercise_type_read'],
   'Instructors': ['instructor_read'],
   'Customers': ['customer_read'],
   'Bookings': ['booking_read'],
-  'Enrollments': ['booking_read'],
+  'Enrollments': ['manage_enrollments'],
   'News & Events': ['news_read'],
   'Categories': ['news_read'],
   'CMS': ['cms_manage'],
@@ -51,10 +51,13 @@ const navItemPermissions = {
   'Reports': ['reports_view'],
   'Vendors': ['vendor_manage'],
   'Settings': [],  // Settings menu itself is visible to all
-  'Class Cancellation Requests': ['class_cancellation_manage'],
+  'Customer Cancellation Requests': ['customer_cancellation_request'],
+  'Instructor Cancellation Requests': ['instructor_cancellation_request'],
+  'Manage Terminations': ['manage_terminations'],
   'Staff': ['roles_manage'],
-  'Class Calendar': ['class_read'],
+  'Class Calendar': ['class_calendar'],
   'Roles & Permissions': ['roles_manage'],
+  'PAQ Reviews': ['paq_reviews']
 };
 
 export function Sidebar({ className }: SidebarProps) {
@@ -64,8 +67,10 @@ export function Sidebar({ className }: SidebarProps) {
 
   // Check if user has permission to see a nav item
   const canSeeNavItem = (itemTitle: string): boolean => {
+
+    
     // Admin can see everything
-    if (userRole === 'admin') return true;
+    // if (userRole === 'admin') return true;
     
     // Check if the item has permission requirements
     const requiredPermissions = navItemPermissions[itemTitle as keyof typeof navItemPermissions] || [];

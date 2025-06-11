@@ -66,6 +66,20 @@ INSERT INTO permissions (name, description) VALUES
 ('vendor_manage', 'Ability to manage vendors'),
 ('roles_manage', 'Ability to manage staff roles and permissions');
 
+
+INSERT INTO permissions (name, description) VALUES
+('exercise_type_create', 'Ability to create new exercise types'),
+('exercise_type_read', 'Ability to view exercise types'),
+('exercise_type_update', 'Ability to update exercise types'),
+('exercise_type_delete', 'Ability to delete exercise types'),
+('paq_reviews', 'Ability to manage PAQs'),
+('manage_enrollments', 'Ability to manage Enrollments'),
+('create_enrollments', 'Ability to create Enrollments'),
+('class_calendar', 'Ability to view class calendar'),
+('customer_cancellation_request', 'Ability to manage customer class canacellation requests'),
+('instructor_cancellation_request', 'Ability to manage instructor class canacellation requests'),
+('manage_terminations', 'Ability to manage terminations');
+
 CREATE TABLE IF NOT EXISTS staff_role_permissions ( role_id uuid REFERENCES staff_roles(id) ON DELETE CASCADE, permission_id uuid REFERENCES permissions(id) ON DELETE CASCADE, PRIMARY KEY (role_id, permission_id), created_at timestamptz DEFAULT now() );
 
 ALTER TABLE staff_role_permissions ENABLE ROW LEVEL SECURITY;

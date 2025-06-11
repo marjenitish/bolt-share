@@ -88,9 +88,9 @@ export default function ExerciseTypesPage() {
     }
   };
 
-  const canCreate = hasPermission('class_create');
-  const canEdit = hasPermission('class_update');
-  const canView = hasPermission('class_read');
+  const canCreate = hasPermission('exercise_type_create');
+  const canEdit = hasPermission('exercise_type_update');
+  const canView = hasPermission('exercise_type_read');
 
   return (
     <div className="space-y-6">
