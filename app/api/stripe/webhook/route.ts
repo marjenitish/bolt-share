@@ -106,25 +106,25 @@ export async function POST(req: Request) {
         console.log("3. Create payment row")
 
         // 3. Create payment row
-        // const receiptNumber = Math.floor(10000000 + Math.random() * 90000000).toString();
+        const receiptNumber = Math.floor(10000000 + Math.random() * 90000000).toString();
 
-        // console.log("receiptNumber generated", receiptNumber)
-        //  // Insert payment record
-        //  const { error: paymentError } = await supabase
-        //  .from('payments')
-        //  .insert({
-        //    enrollment_id: enrollmentId,
-        //    amount: paymentIntent.amount,
-        //    payment_method: 'stripe',
-        //    payment_status: 'completed',
-        //    transaction_id: paymentIntent.id,
-        //    receipt_number: receiptNumber,
-        //    payment_date: new Date().toISOString(),
-        //    notes: `Payment for class: ${enrollmentId}`,
-        //  });
+        console.log("receiptNumber generated", receiptNumber)
+         // Insert payment record
+         const { error: paymentError } = await supabase
+         .from('payments')
+         .insert({
+           enrollment_id: enrollmentId,
+           amount: paymentIntent.amount,
+           payment_method: 'stripe',
+           payment_status: 'completed',
+           transaction_id: paymentIntent.id,
+           receipt_number: receiptNumber,
+           payment_date: new Date().toISOString(),
+           notes: `Payment for class: ${enrollmentId}`,
+         });
 
-        //   console.log("paymentError", paymentError)
-        //  if(paymentError) throw paymentError;
+          console.log("paymentError", paymentError)
+         if(paymentError) throw paymentError;
         break;
 
       case 'payment_intent.payment_failed':
