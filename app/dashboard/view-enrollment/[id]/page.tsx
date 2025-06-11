@@ -1,5 +1,6 @@
 'use client';
 
+import { jsPDF } from 'jspdf';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
@@ -103,6 +104,66 @@ export default function ViewEnrollmentPage() {
     fetchEnrollment();
   }, [id]);
 
+  const exportReceiptToPdf = () => {
+    if (!enrollment || !enrollment.payments || enrollment.payments.length === 0) {
+      console.error('No payment data available to export.');
+      return;
+    }
+
+    const doc = new jsPDF();
+    let yPos = 10;
+
+    doc.setFontSize(18);
+    doc.text('Payment Receipt', 10, yPos);
+    yPos += 10;
+
+    doc.setFontSize(12);
+    doc.text('Receipt For:', 10, yPos);
+    doc.text(`${enrollment.customers?.first_name} ${enrollment.customers?.surname}`, 10, yPos + 5);
+    doc.text(`${enrollment.customers?.email}`, 10, yPos + 10);
+    if (enrollment.customers?.contact_no) {
+      doc.text(`${enrollment.customers?.contact_no}`, 10, yPos + 15);
+    }
+
+    doc.text('Receipt Number:', 150, yPos, { align: 'right' });
+    doc.text(`${enrollment.payments[0]?.receipt_number || 'N/A'}`, 150, yPos + 5, { align: 'right' });
+    doc.text('Receipt Date:', 150, yPos + 10, { align: 'right' });
+    const receiptDate = enrollment.payments[0]?.payment_date
+      ? format(new Date(enrollment.payments[0]?.payment_date), 'dd/MM/yyyy HH:mm')
+      : 'N/A';
+    doc.text(receiptDate, 150, yPos + 15, { align: 'right' });
+
+    yPos += 30;
+
+    doc.setFontSize(14);
+    doc.text('Items', 10, yPos);
+    yPos += 5;
+
+    doc.setFontSize(10);
+    enrollment.bookings.forEach((booking, index) => {
+      const itemY = yPos + (index * 10);
+      doc.text(`${booking.classes?.code} - ${booking.classes?.name}`, 10, itemY);
+      doc.text(format(new Date(booking.booking_date), 'dd/MM/yyyy'), 80, itemY);
+      doc.text(`$${booking.classes?.fee_amount.toFixed(2)}`, 150, itemY, { align: 'right' });
+    });
+
+    yPos += (enrollment.bookings.length * 10) + 10;
+
+    doc.setFontSize(12);
+    doc.text('Total:', 150, yPos, { align: 'right' });
+    doc.text(`$${totalCost.toFixed(2)}`, 180, yPos, { align: 'right' });
+    yPos += 5;
+    doc.setFontSize(10);
+    doc.text('Amount Paid:', 150, yPos, { align: 'right' });
+    doc.text(`$${totalPaid.toFixed(2)}`, 180, yPos, { align: 'right' });
+    yPos += 5;
+    doc.text('Payment Method:', 150, yPos, { align: 'right' });
+    doc.text(`${enrollment.payments[0]?.payment_method || 'N/A'}`, 180, yPos, { align: 'right' });
+
+    const filename = `Receipt_Enrollment_${enrollment.id.slice(0, 8)}.pdf`;
+    doc.save(filename);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -122,7 +183,7 @@ export default function ViewEnrollmentPage() {
     0
   );
 
-  const totalPaid = enrollment.payments[0].amount
+  const totalPaid = enrollment?.payments[0].amount
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
@@ -230,7 +291,11 @@ export default function ViewEnrollmentPage() {
         <TabsContent value="payment" className="mt-4">
           <Card>
             <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle>Payment Receipt</CardTitle>
+                <button onClick={() => exportReceiptToPdf()} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Export to PDF</button>
               <CardTitle>Payment Receipt</CardTitle>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
