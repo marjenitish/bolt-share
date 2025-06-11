@@ -162,6 +162,7 @@ export default function CustomerCancelRequestsPage() {
           if (updateCreditError) throw updateCreditError;
         }
       }
+      }
   
       // Close modal and reset state
       setIsModalOpen(false);
