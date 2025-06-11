@@ -57,7 +57,8 @@ const navItemPermissions = {
   'Staff': ['roles_manage'],
   'Class Calendar': ['class_calendar'],
   'Roles & Permissions': ['roles_manage'],
-  'PAQ Reviews': ['paq_reviews']
+  'PAQ Reviews': ['paq_reviews'],
+  'PAQ Expiry': ['paq_reviews']
 };
 
 export function Sidebar({ className }: SidebarProps) {
@@ -111,6 +112,11 @@ export function Sidebar({ className }: SidebarProps) {
     {
       title: 'PAQ Reviews',
       href: '/dashboard/paq-reviews',
+      icon: Users,
+    },
+    {
+      title: 'PAQ Expiry',
+      href: '/dashboard/paq-expiry',
       icon: Users,
     },
     {
