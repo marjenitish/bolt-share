@@ -13,6 +13,7 @@ import { createBrowserClient } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { PAQProfileForm } from '@/components/profile/paq-profile-form';
 import { getDayName } from '@/lib/utils';
+import { Calendar, Clock, MapPin, AlertCircle } from 'lucide-react';
 
 export default function CustomerDetailsPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
@@ -45,6 +46,33 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
           setUserProfile(userData);
         }
 
+        // Step 1: Fetch enrollments for the customer
+        const { data: enrollments, error: enrollmentsError } = await supabase
+          .from('enrollments')
+          .select('id')
+          .eq('customer_id', params.id); // Use params.id here
+
+        if (enrollmentsError) {
+          console.error('Error fetching enrollments:', enrollmentsError);
+          setBookings([]); // Clear bookings if enrollments fetching failed
+          setPayments([]); // Clear payments if enrollments fetching failed
+          setLoading(false);
+          return;
+        }
+
+        const enrollmentIds = enrollments.map((e: any) => e.id);
+
+        // If no enrollments, there are no bookings or payments
+        if (enrollmentIds.length === 0) {
+          setBookings([]);
+          setPayments([]);
+          setLoading(false);
+          return;
+        }
+
+        // Step 2: Fetch bookings using the enrollment IDs
+
+
         const { data: bookingsData } = await supabase
           .from('bookings')
           .select(`
@@ -61,23 +89,24 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
               )
             )
           `)
-          .eq('customer_id', params.id)
+          .in('enrollment_id', enrollmentIds) // Filter by enrollment IDs
           .order('created_at', { ascending: false });
 
         setBookings(bookingsData || []);
 
+        // Step 3: Fetch payments using the enrollment IDs
         const { data: paymentsData } = await supabase
           .from('payments')
           .select(`
             *,
-            bookings (
+            enrollments (
               id,
               classes (
                 name
               )
             )
           `)
-          .eq('booking_id', bookingsData?.map(b => b.id))
+          .in('enrollment_id', enrollmentIds) // Filter by enrollment IDs
           .order('payment_date', { ascending: false });
 
         setPayments(paymentsData || []);
@@ -138,7 +167,7 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
               <Badge variant="outline">ID: {customer.id.slice(0, 8)}</Badge>
               <Badge variant="secondary">Credits: {customer.customer_credit}</Badge>
               <Badge variant={customer.paq_form ? 'default' : 'destructive'}>
-                        PAQ FORM: {customer.paq_form ? 'Completed' : 'Not Completed'}
+                PAQ FORM: {customer.paq_form ? 'Completed' : 'Not Completed'}
               </Badge>
             </div>
           </div>
@@ -154,222 +183,210 @@ export default function CustomerDetailsPage({ params }: { params: { id: string }
         </TabsList>
 
         <TabsContent value="personal">
-              <div className="grid gap-6 md:grid-cols-2">
-                <Card className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
-                  <dl className="space-y-4">
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Email</dt>
-                      <dd>{customer.email}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Phone</dt>
-                      <dd>{customer.contact_no || 'Not provided'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Work Mobile</dt>
-                      <dd>{customer.work_mobile || 'Not provided'}</dd>
-                    </div>
- <div>
- <dt className="text-sm text-muted-foreground">Australian Citizen</dt>
- <dd>{customer.australian_citizen ? 'Yes' : 'No'}</dd>
- </div>
- <div>
- <dt className="text-sm text-muted-foreground">Language Other Than English</dt>
- <dd>{customer.language_other_than_english || 'None'}</dd>
- </div>
- <div>
- <dt className="text-sm text-muted-foreground">English Proficiency</dt>
- <dd>{customer.english_proficiency || 'Not specified'}</dd>
- </div>
-                  </dl>
-                </Card>
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
+              <dl className="space-y-4">
+                <div>
+                  <dt className="text-sm text-muted-foreground">Email</dt>
+                  <dd>{customer.email}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Phone</dt>
+                  <dd>{customer.contact_no || 'Not provided'}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Work Mobile</dt>
+                  <dd>{customer.work_mobile || 'Not provided'}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Australian Citizen</dt>
+                  <dd>{customer.australian_citizen ? 'Yes' : 'No'}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Language Other Than English</dt>
+                  <dd>{customer.language_other_than_english || 'None'}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">English Proficiency</dt>
+                  <dd>{customer.english_proficiency || 'Not specified'}</dd>
+                </div>
+              </dl>
+            </Card>
 
-                <Card className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Address</h3>
-                  <dl className="space-y-4">
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Street Address</dt>
-                      <dd>{customer.street_number} {customer.street_name}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Suburb</dt>
-                      <dd>{customer.suburb}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Post Code</dt>
-                      <dd>{customer.post_code}</dd>
-                    </div>
- <div>
- <dt className="text-sm text-muted-foreground">Country of Birth</dt>
- <dd>{customer.country_of_birth || 'Not provided'}</dd>
- </div>
-                  </dl>
-                </Card>
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Address</h3>
+              <dl className="space-y-4">
+                <div>
+                  <dt className="text-sm text-muted-foreground">Street Address</dt>
+                  <dd>{customer.street_number} {customer.street_name}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Suburb</dt>
+                  <dd>{customer.suburb}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Post Code</dt>
+                  <dd>{customer.post_code}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Country of Birth</dt>
+                  <dd>{customer.country_of_birth || 'Not provided'}</dd>
+                </div>
+              </dl>
+            </Card>
 
-                <Card className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Personal Details</h3>
-                  <dl className="space-y-4">
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Date of Birth</dt>
-                      <dd>{customer.date_of_birth ? format(new Date(customer.date_of_birth), 'dd/MM/yyyy') : 'Not provided'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Country of Birth</dt>
-                      <dd>{customer.country_of_birth || 'Not provided'}</dd>
-                    </div>
- <div>
- <dt className="text-sm text-muted-foreground">Indigenous Status</dt>
- <dd>{customer.indigenous_status || 'Not specified'}</dd>
- </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Occupation</dt>
-                      <dd>{customer.occupation || 'Not provided'}</dd>
-                    </div>
-                  </dl>
-                </Card>
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Personal Details</h3>
+              <dl className="space-y-4">
+                <div>
+                  <dt className="text-sm text-muted-foreground">Date of Birth</dt>
+                  <dd>{customer.date_of_birth ? format(new Date(customer.date_of_birth), 'dd/MM/yyyy') : 'Not provided'}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Country of Birth</dt>
+                  <dd>{customer.country_of_birth || 'Not provided'}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Indigenous Status</dt>
+                  <dd>{customer.indigenous_status || 'Not specified'}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Occupation</dt>
+                  <dd>{customer.occupation || 'Not provided'}</dd>
+                </div>
+              </dl>
+            </Card>
 
-                <Card className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Emergency Contact</h3>
-                  <dl className="space-y-4">
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Name</dt>
-                      <dd>{customer.next_of_kin_name || 'Not provided'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Relationship</dt>
-                      <dd>{customer.next_of_kin_relationship || 'Not provided'}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm text-muted-foreground">Contact</dt>
-                      <dd>{customer.next_of_kin_mobile || customer.next_of_kin_phone || 'Not provided'}</dd>
-                    </div>
-                  </dl>
-                </Card>
-              </div>
-            </TabsContent>
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Emergency Contact</h3>
+              <dl className="space-y-4">
+                <div>
+                  <dt className="text-sm text-muted-foreground">Name</dt>
+                  <dd>{customer.next_of_kin_name || 'Not provided'}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Relationship</dt>
+                  <dd>{customer.next_of_kin_relationship || 'Not provided'}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm text-muted-foreground">Contact</dt>
+                  <dd>{customer.next_of_kin_mobile || customer.next_of_kin_phone || 'Not provided'}</dd>
+                </div>
+              </dl>
+            </Card>
+          </div>
+        </TabsContent>
 
-            <TabsContent value="bookings">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Your Bookings</h3>
-                {bookings.length > 0 ? (
-                  <div className="space-y-6">
-                    {bookings.map((booking) => (
-                      <div key={booking.id} className="border rounded-lg p-4">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div className="space-y-2">
-                            <h4 className="font-semibold text-lg">{booking.classes?.name}</h4>
-                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                              <div className="flex items-center">
-                                <Calendar className="h-4 w-4 mr-1" />
-                                {getDayName(booking.classes?.day_of_week)}
-                              </div>
-                              <div className="flex items-center">
-                                <Clock className="h-4 w-4 mr-1" />
-                                {booking.classes?.start_time} - {booking.classes?.end_time}
-                              </div>
-                              <div className="flex items-center">
-                                <MapPin className="h-4 w-4 mr-1" />
-                                {booking.classes?.venue}
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-2 mt-2">
-                              <Badge variant={booking.is_free_trial ? 'secondary' : 'default'}>
-                                {booking.is_free_trial ? 'Trial' : booking.term}
-                              </Badge>
-                              {booking.booking_date && (
-                                <Badge variant="outline">
-                                  {format(new Date(booking.booking_date), 'dd/MM/yyyy')}
-                                </Badge>
-                              )}
-                              {booking.cancellation_status && (
-                                <Badge
-                                  variant={
-                                    booking.cancellation_status === 'pending' ? 'secondary' :
-                                      booking.cancellation_status === 'accepted' ? 'default' : 'destructive'
-                                  }
-                                >
-                                  Cancellation: {booking.cancellation_status}
-                                </Badge>
-                              )}
-                            </div>
+        <TabsContent value="bookings">
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Your Bookings</h3>
+            {bookings.length > 0 ? (
+              <div className="space-y-6">
+                {bookings.map((booking) => (
+                  <div key={booking.id} className="border rounded-lg p-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-2">
+                        <h4 className="font-semibold text-lg">{booking.classes?.name}</h4>
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center">
+                            <Calendar className="h-4 w-4 mr-1" />
+                            {getDayName(booking.classes?.day_of_week)}
                           </div>
-                          <div className="flex gap-2">
-                            {!booking.cancellation_status && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleCancelBooking(booking)}
-                              >
-                                <AlertCircle className="h-4 w-4 mr-2" />
-                                Cancel
-                              </Button>
-                            )}
+                          <div className="flex items-center">
+                            <Clock className="h-4 w-4 mr-1" />
+                            {booking.classes?.start_time} - {booking.classes?.end_time}
+                          </div>
+                          <div className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {booking.classes?.venue}
                           </div>
                         </div>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Badge variant={booking.is_free_trial ? 'secondary' : 'default'}>
+                            {booking.is_free_trial ? 'Trial' : booking.term}
+                          </Badge>
+                          {booking.booking_date && (
+                            <Badge variant="outline">
+                              {format(new Date(booking.booking_date), 'dd/MM/yyyy')}
+                            </Badge>
+                          )}
+                          {booking.cancellation_status && (
+                            <Badge
+                              variant={
+                                booking.cancellation_status === 'pending' ? 'secondary' :
+                                  booking.cancellation_status === 'accepted' ? 'default' : 'destructive'
+                              }
+                            >
+                              Cancellation: {booking.cancellation_status}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-                        {booking.cancellation_reason && (
-                          <div className="mt-4 pt-4 border-t">
-                            <p className="text-sm font-medium">Cancellation Reason:</p>
-                            <p className="text-sm text-muted-foreground">{booking.cancellation_reason}</p>
-                            {booking.medical_certificate_url && (
-                              <div className="mt-2">
-                                <a
-                                  href={booking.medical_certificate_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-primary hover:underline"
-                                >
-                                  View Medical Certificate
-                                </a>
-                              </div>
-                            )}
+                    {booking.cancellation_reason && (
+                      <div className="mt-4 pt-4 border-t">
+                        <p className="text-sm font-medium">Cancellation Reason:</p>
+                        <p className="text-sm text-muted-foreground">{booking.cancellation_reason}</p>
+                        {booking.medical_certificate_url && (
+                          <div className="mt-2">
+                            <a
+                              href={booking.medical_certificate_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline"
+                            >
+                              View Medical Certificate
+                            </a>
                           </div>
                         )}
                       </div>
-                    ))}
+                    )}
                   </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">You don't have any bookings yet.</p>
-                    <Button className="mt-4" asChild>
-                      <a href="/search">Find Classes</a>
-                    </Button>
-                  </div>
-                )}
-              </Card>
-            </TabsContent>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">You don't have any bookings yet.</p>
+                <Button className="mt-4" asChild>
+                  <a href="/search">Find Classes</a>
+                </Button>
+              </div>
+            )}
+          </Card>
+        </TabsContent>
 
-            <TabsContent value="payments">
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Payment History</h3>
-                {payments.length > 0 ? (
-                  <div className="space-y-4">
-                    {payments.map((payment) => (
-                      <div key={payment.id} className="flex items-center justify-between border-b pb-4">
-                        <div>
-                          <p className="font-medium">Receipt #{payment.receipt_number}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(new Date(payment.payment_date), 'dd/MM/yyyy HH:mm')}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {payment.bookings?.classes?.name}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">${payment.amount.toFixed(2)}</p>
-                          <Badge variant={payment.payment_status === 'completed' ? 'default' : 'secondary'}>
-                            {payment.payment_status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
+        <TabsContent value="payments">
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4">Payment History</h3>
+            {payments.length > 0 ? (
+              <div className="space-y-4">
+                {payments.map((payment) => (
+                  <div key={payment.id} className="flex items-center justify-between border-b pb-4">
+                    <div>
+                      <p className="font-medium">Receipt #{payment.receipt_number}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(payment.payment_date), 'dd/MM/yyyy HH:mm')}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {payment.bookings?.classes?.name}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">${payment.amount.toFixed(2)}</p>
+                      <Badge variant={payment.payment_status === 'completed' ? 'default' : 'secondary'}>
+                        {payment.payment_status}
+                      </Badge>
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-muted-foreground">No payment records found.</p>
-                )}
-              </Card>
-            </TabsContent>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No payment records found.</p>
+            )}
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );

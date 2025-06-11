@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { Checkbox } from '../ui/checkbox';
 
 const classSchema = z.object({
   name: z.string().min(1, 'Class name is required'),
@@ -46,6 +47,8 @@ const classSchema = z.object({
   term: z.enum(['Term1', 'Term2', 'Term3', 'Term4'], {
     required_error: 'Term is required',
   }),
+  classCapacity: z.number().min(0, 'Class capacity must be 0 or greater').optional(),
+  isSubsidised: z.boolean().default(false),
 });
 
 type ClassFormValues = z.infer<typeof classSchema>;
@@ -84,6 +87,8 @@ export function ClassModal({
       feeCriteria: '',
       feeAmount: 0,
       term: 'Term1',
+      classCapacity: 0,
+      isSubsidised: false,
     },
   });
 
@@ -123,6 +128,8 @@ export function ClassModal({
         feeCriteria: classData.fee_criteria,
         feeAmount: classData.fee_amount,
         term: classData.term,
+        classCapacity: classData.class_capacity || undefined,
+        isSubsidised: classData.is_subsidised || false,
       });
     } else {
       form.reset({
@@ -139,6 +146,8 @@ export function ClassModal({
         feeCriteria: '',
         feeAmount: 0,
         term: 'Term1',
+        classCapacity: undefined,
+        isSubsidised: false,
       });
     }
   }, [classData, form]);
@@ -405,6 +414,43 @@ export function ClassModal({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="classCapacity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Class Capacity</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="e.g. 20"
+                      {...field}
+                      onChange={(e) => field.onChange(parseInt(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="isSubsidised"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none"><FormLabel>Is Subsidised</FormLabel></div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="flex justify-end space-x-2">
               <Button

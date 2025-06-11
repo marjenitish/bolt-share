@@ -116,46 +116,19 @@ export async function POST(req: Request) {
 
         if (receiptError) throw receiptError;
 
-        const { error: paymentError } = await supabase
-          .from('bookings')
-          .select(`
-            *,
-            classes (
-              id,
-              name,
-              fee_amount
-            )
-          `)
-          .eq('enrollment_id', enrollment.id);
-
-        if (bookingsError) throw bookingsError;
-
-        // Create payment records for each booking
-        if (bookings && bookings.length > 0) {
-          for (const booking of bookings) {
-            // Generate a unique receipt number for each payment
-            const { data: receiptNumber, error: receiptError } = await supabase
-              .rpc('generate_receipt_number');
-
-            if (receiptError) throw receiptError;
-
-            // Insert payment record
-            const { error: paymentError } = await supabase
-              .from('payments')
-              .insert({
-                booking_id: booking.id,
-                amount: booking.classes.fee_amount,
-                payment_method: 'stripe',
-                payment_status: 'completed',
-                transaction_id: paymentIntent.id,
-                receipt_number: receiptNumber,
-                payment_date: new Date().toISOString(),
-                notes: `Payment for class: ${booking.classes.name}`,
-              });
-
-            if (paymentError) throw paymentError;
-          }
-        }
+         // Insert payment record
+         const { error: paymentError } = await supabase
+         .from('payments')
+         .insert({
+           enrollment_id: enrollmentId,
+           amount: paymentIntent.amount,
+           payment_method: 'stripe',
+           payment_status: 'completed',
+           transaction_id: paymentIntent.id,
+           receipt_number: receiptNumber,
+           payment_date: new Date().toISOString(),
+           notes: `Payment for class: ${enrollmentId}`,
+         });
         break;
 
       case 'payment_intent.payment_failed':

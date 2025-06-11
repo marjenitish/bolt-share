@@ -56,6 +56,8 @@ export default function ClassesPage() {
             fee_criteria: data.feeCriteria,
             fee_amount: data.feeAmount,
             term: data.term,
+            is_subsidised: data.isSubsidised,
+            class_capacity: data.classCapacity,
             updated_at: new Date().toISOString(),
           })
           .eq('id', selectedClass.id);
@@ -118,6 +120,8 @@ export default function ClassesPage() {
             term: values.term,
             date: format(date, 'yyyy-MM-dd'),
             is_recurring: true,
+            is_subsidised: values.isSubsidised,
+            class_capacity: values.classCapacity,
           }));
 
           // Insert all classes in a transaction

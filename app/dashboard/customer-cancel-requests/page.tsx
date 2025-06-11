@@ -37,7 +37,7 @@ interface PendingBookingCancellation {
   cancellation_reason: string | null;
   medical_certificate_url: string | null;
   classes: {
-    name: string;
+    id: string; // Add class id to fetch details later
     code: string;
     fee_amount: number;
   } | null;
@@ -72,7 +72,7 @@ export default function CustomerCancelRequestsPage() {
         .select(
           `
           id, booking_date, cancellation_reason, medical_certificate_url,
-          enrollment_id,
+          enrollment_id, class_id, // Added class_id here
           classes (name, code),
           enrollments (customers (first_name, surname))
         `
@@ -117,30 +117,43 @@ export default function CustomerCancelRequestsPage() {
   
       if (error) throw error;
   
-      // If accepted, update customer credit
+      // If accepted and enrollment_id exists
       if (reviewStatus === 'accepted' && selectedRequest.enrollment_id) {
-        // Fetch the enrollment to get the customer_id
-        const { data: enrollmentData, error: enrollmentError } = await supabase
-          .from('enrollments')
-          .select('customer_id')
-          .eq('id', selectedRequest.enrollment_id)
+        // Fetch the class details to check if subsidised
+        const { data: classData, error: classError } = await supabase
+          .from('classes')
+          .select('is_subsidised')
+          .eq('id', selectedRequest.class_id)
           .single();
-  
-        if (enrollmentError) throw enrollmentError;
-  
-        if (enrollmentData?.customer_id) {
-          // Fetch the customer's current credit
-          const { data: customerData, error: customerError } = await supabase
-            .from('customers')
-            .select('customer_credit')
-            .eq('id', enrollmentData.customer_id)
+
+        if (classError) {
+          console.error('Error fetching class details for subsidy check:', classError);
+          // Continue without adding credit if class data can't be fetched
+        }
+
+        // Only add credit if the class is NOT subsidised
+        if (classData && !classData.is_subsidised) {
+          // Fetch the enrollment to get the customer_id
+          const { data: enrollmentData, error: enrollmentError } = await supabase
+            .from('enrollments')
+            .select('customer_id')
+            .eq('id', selectedRequest.enrollment_id)
             .single();
-  
-          if (customerError) throw customerError;
-  
-          // Update the customer's credit by incrementing
-          const newCredit = (customerData?.customer_credit || 0) + 1;
-          
+    
+          if (enrollmentError) {
+            console.error('Error fetching enrollment for customer_id:', enrollmentError);
+            // Continue without adding credit if enrollment data can't be fetched
+          } else if (enrollmentData?.customer_id) {
+            // Fetch the customer's current credit
+            const { data: customerData, error: customerError } = await supabase
+              .from('customers')
+              .select('customer_credit')
+              .eq('id', enrollmentData.customer_id)
+              .single();
+    
+            if (customerError) throw customerError; // Throw error if customer credit can't be fetched
+    
+            // Update the customer's credit by incrementing
           const { error: updateCreditError } = await supabase
             .from('customers')
             .update({ customer_credit: newCredit })
